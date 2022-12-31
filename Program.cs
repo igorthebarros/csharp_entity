@@ -1,4 +1,5 @@
 ﻿using EntityFC.Data;
+using EntityFC.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -10,6 +11,48 @@ HealthCheckDatabase();
 ManageDatabaseConnectionState(true);
 ManageDatabaseConnectionState(false);
 ExecuteSQL();
+SQLInjection();
+PendingMigrations();
+
+static void PendingMigrations()
+{
+    using var db = new Context();
+    var pendingMigrations = db.Database.GetPendingMigrations();
+
+    Console.WriteLine($"Total: {pendingMigrations.Count()}");
+
+    foreach(var migration in pendingMigrations)
+    {
+        Console.WriteLine($"Migration: {migration}");
+    }
+}
+
+static void SQLInjection()
+{
+    using var db = new Context();
+    db.Database.EnsureDeleted();
+    db.Database.EnsureCreated();
+
+    db.Departaments.AddRange(
+        new Departament
+        {
+            Description = "Dpt 01"
+        },
+        new Departament
+        {
+            Description = "Dpt 02"
+        });
+    db.SaveChanges();
+
+    var description = "Test ' or 1='1";
+    //We should never use concatenation with the values sended by the users on sql instruction
+    //It should be done using its values like arguments, with the method ExecuteSqlRaw - OR with interpolation
+    db.Database.ExecuteSqlRaw($"update departaments set description='SQLInjectionAttack' where description='{description}'");
+    foreach(var departament in db.Departaments.AsNoTracking())
+    {
+        Console.WriteLine($"Id: {departament.Id}, Description: {departament.Description}");
+    }
+}
 
 static void ExecuteSQL()
 {
@@ -29,6 +72,7 @@ static void ExecuteSQL()
     //Third option - There is a Async option
     db.Database.ExecuteSqlInterpolated($"update departaments set description={description} where id=1");
 }
+
 static void ManageDatabaseConnectionState(bool manageConnectionState)
 {
     uint _count = 0;
@@ -39,10 +83,10 @@ static void ManageDatabaseConnectionState(bool manageConnectionState)
 
     connection.StateChange += (_, __) => ++_count;
 
-    if(manageConnectionState)
+    if (manageConnectionState)
         connection.Open();
 
-    for(var i = 0; i < 200; i++)
+    for (var i = 0; i < 200; i++)
     {
         db.Departaments.AsNoTracking().Any();
     }
