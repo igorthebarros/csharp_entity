@@ -1,10 +1,56 @@
 ﻿using EntityFC.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using System.Diagnostics;
 
 EnsureCreatedAndDeleted();
 FixEnsureCreatedGap();
 HealthCheckDatabase();
+ManageDatabaseConnectionState(true);
+ManageDatabaseConnectionState(false);
+ExecuteSQL();
+
+static void ExecuteSQL()
+{
+    using var db = new Context();
+
+    //First option
+    using (var cmd = db.Database.GetDbConnection().CreateCommand())
+    {
+        cmd.CommandText = "SELECT 1";
+        cmd.ExecuteNonQuery();
+    }
+
+    //Second option
+    var description = "Test";
+    db.Database.ExecuteSqlRaw("upate departaments set description={0} where id=1", description);
+
+    //Third option - There is a Async option
+    db.Database.ExecuteSqlInterpolated($"update departaments set description={description} where id=1");
+}
+static void ManageDatabaseConnectionState(bool manageConnectionState)
+{
+    uint _count = 0;
+    using var db = new Context();
+    var watch = Stopwatch.StartNew();
+
+    var connection = db.Database.GetDbConnection();
+
+    connection.StateChange += (_, __) => ++_count;
+
+    if(manageConnectionState)
+        connection.Open();
+
+    for(var i = 0; i < 200; i++)
+    {
+        db.Departaments.AsNoTracking().Any();
+    }
+
+    watch.Stop();
+    var message = $"Time spent: {watch.Elapsed}, {manageConnectionState}, Count: {_count}";
+    Console.WriteLine(message);
+}
 
 static void EnsureCreatedAndDeleted()
 {
