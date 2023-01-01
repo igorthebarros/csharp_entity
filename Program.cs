@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Diagnostics;
 
+#region DATABASE
 //EnsureCreatedAndDeleted();
 //FixEnsureCreatedGap();
 //HealthCheckDatabase();
@@ -17,6 +18,15 @@ using System.Diagnostics;
 //ApplyMigrationOnExecution();
 //GetAllMigrations();
 //GetAllAppliedMigrations();
+//GetDatabaseScript();
+
+static void GetDatabaseScript()
+{
+    using var db = new Context();
+    var script = db.Database.GenerateCreateScript();
+
+    Console.WriteLine(script);
+}
 
 static void ApplyMigrationOnExecution()
 {
@@ -166,3 +176,7 @@ static void HealthCheckDatabase()
     else
         Console.WriteLine("Database is OFF!");
 }
+#endregion
+
+#region 
+#endregion
