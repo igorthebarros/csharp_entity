@@ -5,16 +5,52 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Diagnostics;
 
-EnsureCreatedAndDeleted();
-FixEnsureCreatedGap();
-HealthCheckDatabase();
-ManageDatabaseConnectionState(true);
-ManageDatabaseConnectionState(false);
-ExecuteSQL();
-SQLInjection();
-PendingMigrations();
+//EnsureCreatedAndDeleted();
+//FixEnsureCreatedGap();
+//HealthCheckDatabase();
+//ManageDatabaseConnectionState(true);
+//ManageDatabaseConnectionState(false);
+//ExecuteSQL();
+//SQLInjection();
+//GetAllMigrations();
+//GetAllPendingMigrations();
+//ApplyMigrationOnExecution();
+//GetAllMigrations();
+//GetAllAppliedMigrations();
 
-static void PendingMigrations()
+static void ApplyMigrationOnExecution()
+{
+    using var db = new Context();
+    //Use this on Context
+    db.Database.Migrate();
+}
+
+static void GetAllMigrations()
+{
+    using var db = new Context();
+    var migrations = db.Database.GetMigrations();
+    Console.WriteLine($"Total: {migrations.Count()}");
+
+    foreach (var migration in migrations)
+    {
+        Console.WriteLine($"Migration: {migration}");
+    }
+
+}
+
+static void GetAllAppliedMigrations()
+{
+    using var db = new Context();
+    var migrations = db.Database.GetAppliedMigrations();
+    Console.WriteLine($"Total: {migrations.Count()}");
+
+    foreach (var migration in migrations)
+    {
+        Console.WriteLine($"Migration: {migration}");
+    }
+}
+
+static void GetAllPendingMigrations()
 {
     using var db = new Context();
     var pendingMigrations = db.Database.GetPendingMigrations();
