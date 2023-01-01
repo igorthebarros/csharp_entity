@@ -67,7 +67,7 @@ static void GetAllPendingMigrations()
 
     Console.WriteLine($"Total: {pendingMigrations.Count()}");
 
-    foreach(var migration in pendingMigrations)
+    foreach (var migration in pendingMigrations)
     {
         Console.WriteLine($"Migration: {migration}");
     }
@@ -94,7 +94,7 @@ static void SQLInjection()
     //We should never use concatenation with the values sended by the users on sql instruction
     //It should be done using its values like arguments, with the method ExecuteSqlRaw - OR with interpolation
     db.Database.ExecuteSqlRaw($"update departaments set description='SQLInjectionAttack' where description='{description}'");
-    foreach(var departament in db.Departaments.AsNoTracking())
+    foreach (var departament in db.Departaments.AsNoTracking())
     {
         Console.WriteLine($"Id: {departament.Id}, Description: {departament.Description}");
     }
@@ -178,5 +178,70 @@ static void HealthCheckDatabase()
 }
 #endregion
 
-#region 
+#region TYPES OF LOADING
+
+static void AdvanceLoad()
+{
+    //The advance load will bound the joins with the same DB select query and populate the navegation properties (e.g: employees inside departament)
+    //E.g: When selecting the departaments, the advance load will also select the employees that are related to the departaments
+
+    //When dealing with small tables, this function should do the trick quite well. But when its a large table with a bunch of columns and other complex joins,
+    //this method of advance load should not be suitable - Also, this might duplicate the data. E.g: For every departament, all employees will be recovered.
+    //So, if there is a employee with multiples departaments, this employee will be recovered in every single departament he's bound
+    using var db = new Context();
+    SeedDatabase(db);
+
+    var departaments = db
+        .Departaments
+        .Include(x => x.Employees);
+
+    foreach(var departament in departaments)
+    {
+        Console.WriteLine("___________________________");
+        Console.WriteLine($"Departament: {departament.Description}");
+
+        if (!departament.Employees.Any())
+            Console.WriteLine($"\tNo employees were found!");
+        else
+        {
+            foreach(var employee in departament.Employees)
+            {
+                Console.WriteLine($"\tEmployee: {employee.Name}");
+            }
+        }
+    }
+}
+static void SeedDatabase(Context db)
+{
+    if (!db.Departaments.Any())
+    {
+        db.Departaments.AddRange(
+            new Departament
+            {
+                Description = "Departament 01",
+                Employees = new List<Employee>
+                {
+                    new Employee
+                    {
+                        Name = "Iguinho Bariloche",
+                        CPF = "0000000001"
+                    }
+                },
+            },
+            new Departament
+            {
+                Description = "Departament 02",
+                Employees = new List<Employee> 
+                {
+                    new Employee
+                    {
+                        Name = "Bariloche Iguinho",
+                        CPF = "1111111110"
+                    }
+                }
+            });
+        db.SaveChanges();
+        db.ChangeTracker.Clear();
+    }
+}
 #endregion
